@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Disk Visualization - TresJS</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #f8f9fa;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+        }
+
+        #app {
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #333;
+            font-size: 24px;
+            z-index: 1000;
+        }
+
+        .controls-info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #333;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: #333;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .text-color { background: #1e40af; }
+        .audio-color { background: #166534; }
+        .image-color { background: #ea580c; }
+        .data-color { background: #dc2626; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="loading">Loading TresJS Data Disk...</div>
+    </div>
+
+    <div class="controls-info">
+        <strong>Controls:</strong><br>
+        Left Click + Drag: Rotate<br>
+        Mouse Wheel: Zoom<br>
+        Right Click + Drag: Pan<br>
+        <br>
+        <strong>Interactions:</strong><br>
+        Hover: Highlight sectors + tooltips<br>
+        Click sub-arcs: Expand/collapse techniques<br>
+        Click techniques: Individual animations
+    </div>
+
+    <div class="legend">
+        <strong>Data Types & Transformations:</strong><br>
+        <div class="legend-item">
+            <div class="legend-color data-color"></div>
+            DATA (Center)
+        </div>
+        <div class="legend-item">
+            <div class="legend-color text-color"></div>
+            Text Sector
+        </div>
+        <div class="legend-item">
+            <div class="legend-color audio-color"></div>
+            Audio Sector
+        </div>
+        <div class="legend-item">
+            <div class="legend-color image-color"></div>
+            Image Sector
+        </div>
+        <br>
+        <strong>Sub-Arcs (Transformations):</strong><br>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #1e3a8a;"></div>
+            Text→Text
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #0d9488;"></div>
+            Text→Audio
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #d4af37;"></div>
+            Text→Image
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #166534;"></div>
+            Audio→Audio
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #9a3412;"></div>
+            Audio→Image
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #0891b2;"></div>
+            Audio→Text
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #ea580c;"></div>
+            Image→Image
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #7c3aed;"></div>
+            Image→Text
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #65a30d;"></div>
+            Image→Audio
+        </div>
+        <br>
+        <strong>Technique Categories:</strong><br>
+        <div class="legend-item">
+            <span style="font-size: 12px; color: #666;">(Outer rings - click sub-arcs to expand)</span>
+        </div>
+        <div class="legend-item">
+            <span style="font-weight: normal;">• Classical / Rule-based</span>
+        </div>
+        <div class="legend-item">
+            <span style="font-weight: normal;">• Statistical & Hybrid</span>
+        </div>
+        <div class="legend-item">
+            <span style="font-weight: normal;">• Deep Learning</span>
+        </div>
+        <div class="legend-item">
+            <span style="font-weight: normal;">• Advanced / Emerging</span>
+        </div>
+
+    <div id="transformation-info" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(255,255,255,0.95); color: #333; padding: 20px; border-radius: 10px; font-size: 18px; z-index: 200; pointer-events: none; box-shadow: 0 4px 16px rgba(0,0,0,0.2); border: 1px solid #ddd;"></div>
+
+    <div id="technique-tooltip" style="display: none; position: absolute; background: rgba(255,255,255,0.95); color: #333; padding: 12px 16px; border-radius: 6px; font-size: 14px; font-weight: bold; z-index: 300; pointer-events: none; border: 2px solid #333; box-shadow: 0 4px 12px rgba(0,0,0,0.3);"></div>
+
+    <!-- Import Three.js directly -->
+    <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.158.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    
+    <!-- Debug script to check if Three.js loaded -->
+    <script>
+        console.log('Three.js loaded:', typeof THREE !== 'undefined');
+        console.log('OrbitControls loaded:', typeof THREE !== 'undefined' && typeof THREE.OrbitControls !== 'undefined');
+        console.log('GSAP loaded:', typeof gsap !== 'undefined');
+
+        // Wait a bit and check again
+        setTimeout(() => {
+            console.log('Three.js loaded (delayed):', typeof THREE !== 'undefined');
+            console.log('OrbitControls loaded (delayed):', typeof THREE !== 'undefined' && typeof THREE.OrbitControls !== 'undefined');
+            console.log('GSAP loaded (delayed):', typeof gsap !== 'undefined');
+        }, 500);
+    </script>
+    
+    <script src="main.js"></script>
+</body>
+</html>
