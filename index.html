@@ -10,12 +10,39 @@
             padding: 0;
             background: #f8f9fa;
             font-family: 'Arial', sans-serif;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;
         }
 
         #app {
             width: 100vw;
             height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        .scroll-content {
+            position: relative;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .scroll-section {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .scroll-title {
+            font-size: 72px;
+            font-weight: bold;
+            color: #1e40af;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            transform: translateX(100vw);
+            opacity: 0;
         }
 
         .loading {
@@ -76,6 +103,14 @@
 <body>
     <div id="app">
         <div class="loading">Loading TresJS Data Disk...</div>
+    </div>
+
+    <div class="scroll-content">
+        <div class="scroll-section"></div>
+        <div class="scroll-section">
+            <h1 class="scroll-title" id="dept-title">DEPARTMENT OF SWE</h1>
+        </div>
+        <div class="scroll-section"></div>
     </div>
 
     <div class="controls-info">
@@ -172,6 +207,7 @@
     <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
     <script src="https://unpkg.com/three@0.158.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     
     <!-- Debug script to check if Three.js loaded -->
     <script>
@@ -184,6 +220,68 @@
             console.log('Three.js loaded (delayed):', typeof THREE !== 'undefined');
             console.log('OrbitControls loaded (delayed):', typeof THREE !== 'undefined' && typeof THREE.OrbitControls !== 'undefined');
             console.log('GSAP loaded (delayed):', typeof gsap !== 'undefined');
+            console.log('ScrollTrigger loaded:', typeof ScrollTrigger !== 'undefined');
+            
+            // Try to use GSAP ScrollTrigger if available
+            if (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {
+                gsap.registerPlugin(ScrollTrigger);
+                console.log('ScrollTrigger registered successfully');
+                
+                // Initialize scroll animation with GSAP
+                gsap.to("#dept-title", {
+                    x: 0,
+                    opacity: 1,
+                    duration: 1.5,
+                    ease: "power2.out",
+                    scrollTrigger: {
+                        trigger: "#dept-title",
+                        start: "top 80%",
+                        end: "top 30%",
+                        scrub: 1,
+                        markers: false
+                    }
+                });
+                console.log('GSAP scroll animation initialized');
+            } else {
+                // Fallback to vanilla JS scroll animation
+                console.log('Using vanilla JS scroll animation fallback');
+                window.addEventListener('scroll', function() {
+                    const title = document.getElementById('dept-title');
+                    if (!title) return;
+                    
+                    const scrollPosition = window.scrollY;
+                    const windowHeight = window.innerHeight;
+                    
+                    // Calculate when title should start animating
+                    const titleTop = title.getBoundingClientRect().top + window.scrollY;
+                    const startScroll = titleTop - windowHeight * 0.8;
+                    const endScroll = titleTop - windowHeight * 0.3;
+                    
+                    if (scrollPosition > startScroll && scrollPosition < endScroll) {
+                        // Calculate progress (0 to 1)
+                        const progress = (scrollPosition - startScroll) / (endScroll - startScroll);
+                        
+                        // Ease function (ease-out cubic)
+                        const easeProgress = 1 - Math.pow(1 - progress, 3);
+                        
+                        // Animate from right to center
+                        const translateX = (1 - easeProgress) * window.innerWidth;
+                        const opacity = easeProgress;
+                        
+                        title.style.transform = 'translateX(' + translateX + 'px)';
+                        title.style.opacity = opacity;
+                    } else if (scrollPosition >= endScroll) {
+                        // Fully visible
+                        title.style.transform = 'translateX(0)';
+                        title.style.opacity = '1';
+                    } else {
+                        // Hidden
+                        title.style.transform = 'translateX(100vw)';
+                        title.style.opacity = '0';
+                    }
+                });
+                console.log('Vanilla JS scroll animation initialized');
+            }
         }, 500);
     </script>
     
